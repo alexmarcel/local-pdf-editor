@@ -1,0 +1,23 @@
+{
+  "appId": "com.localpdfeditor.app.legacy",
+  "productName": "JumiPDF",
+  "electronVersion": "22.3.27",
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "directories": {
+    "output": "release/legacy"
+  },
+  "win": {
+    "target": "nsis",
+    "signAndEditExecutable": false,
+    "artifactName": "${productName} Setup ${version} Legacy Win7 ${arch}.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true
+  }
+}

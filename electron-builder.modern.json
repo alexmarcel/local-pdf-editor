@@ -1,0 +1,22 @@
+{
+  "appId": "com.localpdfeditor.app",
+  "productName": "JumiPDF",
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "directories": {
+    "output": "release/modern"
+  },
+  "win": {
+    "target": "nsis",
+    "signAndEditExecutable": false,
+    "artifactName": "${productName} Setup ${version} Windows 10-11 ${arch}.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true
+  }
+}
