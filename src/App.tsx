@@ -27,11 +27,11 @@ import {
   undo,
   visiblePages
 } from "./pageOps";
-import type { EditHistory, LoadedPdf } from "./pdfTypes";
+import type { EditHistory, LoadedPdf, PdfCompressionLevel } from "./pdfTypes";
 import { usePdfDocument } from "./usePdfDocument";
 import { openPdfDialog, overwritePdf, readPdfFromPath, savePdfAs } from "./electronApi";
 import { loadPdfjs } from "./pdfjs";
-import appIconUrl from "/meme.jpg";
+import appIconUrl from "/app-icon.png";
 
 export default function App() {
   const [loadedPdf, setLoadedPdf] = useState<LoadedPdf | null>(null);
@@ -39,6 +39,7 @@ export default function App() {
   const [status, setStatus] = useState("Open a PDF to begin.");
   const [isBusy, setIsBusy] = useState(false);
   const [isDropActive, setIsDropActive] = useState(false);
+  const [compressionLevel, setCompressionLevel] = useState<PdfCompressionLevel>("standard");
   const { document: pdfDocument, error: previewError } = usePdfDocument(loadedPdf?.originalBytes ?? null);
   const pages = useMemo(() => (history ? visiblePages(history.present) : []), [history]);
   const sensors = useSensors(
@@ -104,7 +105,7 @@ export default function App() {
     setStatus("Preparing edited PDF...");
 
     try {
-      return await exportEditedPdf(loadedPdf.originalBytes, history.present);
+      return await exportEditedPdf(loadedPdf.originalBytes, history.present, { compressionLevel });
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Unable to export PDF.");
       return null;
@@ -222,6 +223,18 @@ export default function App() {
           >
             <Redo2 size={18} />
           </button>
+          <label className="compression-control">
+            <span>Compression</span>
+            <select
+              value={compressionLevel}
+              disabled={!loadedPdf || isBusy}
+              onChange={(event) => setCompressionLevel(event.target.value as PdfCompressionLevel)}
+            >
+              <option value="none">None</option>
+              <option value="standard">Standard</option>
+              <option value="maximum">Maximum</option>
+            </select>
+          </label>
           <button className="command-button" disabled={!loadedPdf || isBusy} onClick={() => void handleOverwrite()}>
             <Save size={18} />
             Save

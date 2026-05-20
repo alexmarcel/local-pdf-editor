@@ -1,10 +1,15 @@
 import { PDFDocument, degrees } from "pdf-lib";
 import { visiblePages } from "./pageOps";
-import type { PageModel } from "./pdfTypes";
+import type { PageModel, PdfCompressionLevel } from "./pdfTypes";
+
+export interface ExportEditedPdfOptions {
+  compressionLevel?: PdfCompressionLevel;
+}
 
 export async function exportEditedPdf(
   originalBytes: Uint8Array,
-  pages: PageModel[]
+  pages: PageModel[],
+  options: ExportEditedPdfOptions = {}
 ): Promise<Uint8Array> {
   const source = await PDFDocument.load(originalBytes);
   const output = await PDFDocument.create();
@@ -17,5 +22,7 @@ export async function exportEditedPdf(
     output.addPage(copiedPage);
   }
 
-  return output.save();
+  return output.save({
+    useObjectStreams: options.compressionLevel !== "none"
+  });
 }

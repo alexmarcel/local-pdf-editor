@@ -1,6 +1,7 @@
 {
   "appId": "com.localpdfeditor.app",
   "productName": "JumiPDF",
+  "afterPack": "build/after-pack.cjs",
   "files": [
     "dist/**/*",
     "electron/**/*",
@@ -11,6 +12,7 @@
   },
   "win": {
     "target": "nsis",
+    "icon": "build/app-icon.ico",
     "signAndEditExecutable": false,
     "artifactName": "${productName} Setup ${version} Windows 10-11 ${arch}.${ext}"
   },

@@ -19,6 +19,8 @@ export interface EditHistory {
   future: PageModel[][];
 }
 
+export type PdfCompressionLevel = "none" | "standard" | "maximum";
+
 export interface PdfFilePayload {
   path: string;
   file_name: string;

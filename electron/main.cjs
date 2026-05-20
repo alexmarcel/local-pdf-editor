@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const { app, BrowserWindow, Menu, dialog, ipcMain } = require("electron");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
@@ -16,6 +16,7 @@ function createWindow() {
     height: 780,
     minWidth: 840,
     minHeight: 560,
+    autoHideMenuBar: true,
     backgroundColor: "#f7f5f0",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
@@ -33,6 +34,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
   createWindow();
 
   app.on("activate", () => {
