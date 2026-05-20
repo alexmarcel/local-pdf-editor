@@ -123,8 +123,9 @@ On some Windows machines, installer packaging may require developer mode or syml
 
 ```text
 electron/        Electron main process and preload bridge
-public/          Static assets, including meme.jpg
+build/           Packaging helper scripts and generated app icon
 src/             React UI, PDF state logic, and tests
+app-icon.png     Source icon used by the app UI and Windows packaging
 index.html       Vite HTML entrypoint
 package.json     npm scripts and dependencies
 ```

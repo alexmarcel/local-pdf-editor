@@ -31,7 +31,7 @@ import type { EditHistory, LoadedPdf, PdfCompressionLevel } from "./pdfTypes";
 import { usePdfDocument } from "./usePdfDocument";
 import { openPdfDialog, overwritePdf, readPdfFromPath, savePdfAs } from "./electronApi";
 import { loadPdfjs } from "./pdfjs";
-import appIconUrl from "/app-icon.png";
+import appIconUrl from "../app-icon.png";
 
 export default function App() {
   const [loadedPdf, setLoadedPdf] = useState<LoadedPdf | null>(null);
