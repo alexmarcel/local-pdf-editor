@@ -15,8 +15,7 @@ async function unlockPdfPayload(inputPath, password) {
     await runQpdf(qpdfPath, [
       "--decrypt",
       "--remove-restrictions",
-      "--password-file",
-      passwordPath,
+      `--password-file=${passwordPath}`,
       "--",
       inputPath,
       outputPath
@@ -26,7 +25,7 @@ async function unlockPdfPayload(inputPath, password) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unable to unlock PDF.";
 
-    if (/invalid password|incorrect password|password/i.test(message)) {
+    if (/invalid password|incorrect password|supplied password is not correct/i.test(message)) {
       throw new Error("Incorrect password.");
     }
 
