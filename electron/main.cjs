@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require("electron");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { unlockPdfPayload } = require("./pdfUnlock.cjs");
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
 const electronMajor = Number(process.versions.electron.split(".")[0]);
@@ -65,6 +66,17 @@ ipcMain.handle("pdf:open-dialog", async () => {
 
 ipcMain.handle("pdf:read-path", async (_event, filePath) => {
   return readPdfPayload(filePath);
+});
+
+ipcMain.handle("pdf:unlock", async (_event, filePath, password) => {
+  assertPdfPath(filePath, "Please choose a PDF file.");
+  const unlockedBytes = await unlockPdfPayload(filePath, String(password ?? ""));
+
+  return {
+    path: filePath,
+    file_name: path.basename(filePath),
+    bytes_base64: unlockedBytes.toString("base64")
+  };
 });
 
 ipcMain.handle("pdf:save-as", async (_event, bytesBase64, suggestedName) => {

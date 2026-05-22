@@ -17,6 +17,8 @@ Use the modern installer whenever possible. The legacy installer exists for olde
 
 - Open local PDF files with a file picker.
 - Drag and drop a local PDF into the app.
+- Open password-protected PDFs when you know the password.
+- Remove print/edit restrictions from PDFs before editing.
 - Preview pages as thumbnails.
 - Delete pages.
 - Drag pages to rearrange order.
@@ -118,6 +120,24 @@ Legacy compatibility depends on a few project choices:
 - `electron/main.cjs` disables hardware acceleration on Electron 22 and older to avoid blank windows on older Windows graphics drivers.
 
 On some Windows machines, installer packaging may require developer mode or symlink privileges.
+
+## Locked PDFs
+
+JumiPDF can open locked PDFs by running QPDF locally through the Electron main process. It does not guess or crack unknown passwords.
+
+For development, place the Windows QPDF runtime files here:
+
+```text
+tools/qpdf/qpdf.exe
+```
+
+Include any DLLs that ship with that QPDF build in the same folder. The modern and legacy Electron Builder configs copy `tools/qpdf/` into packaged app resources as `qpdf/`.
+
+When a locked PDF is opened:
+
+- Password-protected PDFs prompt for the password.
+- Print/edit restricted PDFs are unlocked locally before editing.
+- Saved edited PDFs are written as unlocked PDFs.
 
 ## Project Structure
 

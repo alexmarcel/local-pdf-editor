@@ -14,6 +14,7 @@ import {
 } from "@dnd-kit/sortable";
 import { FileDown, FileInput, Save, Undo2, Redo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type DragEvent } from "react";
+import { PDFDocument } from "pdf-lib";
 import PageCard from "./PageCard";
 import { exportEditedPdf } from "./pdfExport";
 import {
@@ -29,9 +30,26 @@ import {
 } from "./pageOps";
 import type { EditHistory, LoadedPdf, PdfCompressionLevel } from "./pdfTypes";
 import { usePdfDocument } from "./usePdfDocument";
-import { openPdfDialog, overwritePdf, readPdfFromPath, savePdfAs } from "./electronApi";
+import { openPdfDialog, overwritePdf, readPdfFromPath, savePdfAs, unlockPdf } from "./electronApi";
 import { loadPdfjs } from "./pdfjs";
 import appIconUrl from "../app-icon.png";
+
+interface PendingPasswordPdf {
+  pdf: LoadedPdf;
+  message: string;
+}
+
+class PdfPasswordRequiredError extends Error {
+  pdf: LoadedPdf | null;
+  promptMessage: string;
+
+  constructor(pdf: LoadedPdf | null = null, promptMessage = "Enter the password to unlock this PDF.") {
+    super("Password required.");
+    this.name = "PdfPasswordRequiredError";
+    this.pdf = pdf;
+    this.promptMessage = promptMessage;
+  }
+}
 
 export default function App() {
   const [loadedPdf, setLoadedPdf] = useState<LoadedPdf | null>(null);
@@ -40,6 +58,8 @@ export default function App() {
   const [isBusy, setIsBusy] = useState(false);
   const [isDropActive, setIsDropActive] = useState(false);
   const [compressionLevel, setCompressionLevel] = useState<PdfCompressionLevel>("standard");
+  const [pendingPasswordPdf, setPendingPasswordPdf] = useState<PendingPasswordPdf | null>(null);
+  const [password, setPassword] = useState("");
   const { document: pdfDocument, error: previewError } = usePdfDocument(loadedPdf?.originalBytes ?? null);
   const pages = useMemo(() => (history ? visiblePages(history.present) : []), [history]);
   const sensors = useSensors(
@@ -59,13 +79,22 @@ export default function App() {
         return;
       }
 
-      const pdfjs = await loadPdfjs();
-      const pdfDoc = await pdfjs.getDocument({ data: pdf.originalBytes.slice() }).promise;
-      const nextPdf = { ...pdf, pageCount: pdfDoc.numPages };
+      const preparedPdf = await preparePdfForEditing(pdf);
+      const pdfDoc = await loadPdfDocument(preparedPdf.originalBytes);
+      const nextPdf = { ...preparedPdf, pageCount: pdfDoc.numPages };
       setLoadedPdf(nextPdf);
       setHistory(createHistory(createPages(pdfDoc.numPages)));
-      setStatus(`${nextPdf.fileName} loaded with ${pdfDoc.numPages} page${pdfDoc.numPages === 1 ? "" : "s"}.`);
+      setPendingPasswordPdf(null);
+      setPassword("");
+      setStatus(loadedStatus(nextPdf));
     } catch (err) {
+      if (err instanceof PdfPasswordRequiredError) {
+        if (err.pdf) {
+          setPendingPasswordPdf({ pdf: err.pdf, message: err.promptMessage });
+        }
+        return;
+      }
+
       setStatus(err instanceof Error ? err.message : "Unable to load PDF.");
     } finally {
       setIsBusy(false);
@@ -162,6 +191,43 @@ export default function App() {
     } finally {
       setIsBusy(false);
     }
+  }
+
+  async function handleUnlockWithPassword() {
+    if (!pendingPasswordPdf) {
+      return;
+    }
+
+    setIsBusy(true);
+    setStatus("Unlocking PDF...");
+
+    try {
+      const unlocked = await unlockPdf(pendingPasswordPdf.pdf.originalPath, password);
+      const pdfDoc = await loadPdfDocument(unlocked.originalBytes);
+      const nextPdf = { ...unlocked, pageCount: pdfDoc.numPages };
+      setLoadedPdf(nextPdf);
+      setHistory(createHistory(createPages(pdfDoc.numPages)));
+      setPendingPasswordPdf(null);
+      setPassword("");
+      setStatus(loadedStatus(nextPdf));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to unlock PDF.";
+      setPendingPasswordPdf({
+        pdf: pendingPasswordPdf.pdf,
+        message: /incorrect password/i.test(message) ? "Incorrect password." : message
+      });
+      setStatus(message);
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  function handleCancelPassword() {
+    setPendingPasswordPdf(null);
+    setPassword("");
+    setLoadedPdf(null);
+    setHistory(null);
+    setStatus("Open a PDF to begin.");
   }
 
   function handleDragOver(event: DragEvent<HTMLElement>) {
@@ -284,12 +350,113 @@ export default function App() {
       )}
 
       {isBusy ? <div className="busy-indicator">Working...</div> : null}
+      {pendingPasswordPdf ? (
+        <div className="modal-backdrop" role="presentation">
+          <form
+            className="password-modal"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleUnlockWithPassword();
+            }}
+          >
+            <h2>Password required</h2>
+            <p>{pendingPasswordPdf.pdf.fileName}</p>
+            <input
+              autoFocus
+              type="password"
+              value={password}
+              disabled={isBusy}
+              onChange={(event) => setPassword(event.target.value)}
+              aria-label="PDF password"
+            />
+            <span className="modal-message">{pendingPasswordPdf.message}</span>
+            <div className="modal-actions">
+              <button className="command-button" type="button" disabled={isBusy} onClick={handleCancelPassword}>
+                Cancel
+              </button>
+              <button className="command-button primary" type="submit" disabled={isBusy}>
+                Unlock
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
       <div className="status-bar">
         <span>{status}</span>
         {loadedPdf ? <span>{loadedPdf.originalPath}</span> : null}
       </div>
     </main>
   );
+}
+
+async function preparePdfForEditing(pdf: LoadedPdf): Promise<LoadedPdf> {
+  try {
+    await loadPdfDocument(pdf.originalBytes);
+  } catch (err) {
+    if (isPasswordError(err)) {
+      throw new PdfPasswordRequiredError(pdf);
+    }
+
+    throw err;
+  }
+
+  try {
+    await PDFDocument.load(pdf.originalBytes);
+    return { ...pdf, securityStatus: "none" };
+  } catch (err) {
+    if (isEncryptedPdfLibError(err)) {
+      return unlockPdf(pdf.originalPath, "");
+    }
+
+    throw err;
+  }
+}
+
+async function loadPdfDocument(bytes: Uint8Array) {
+  const pdfjs = await loadPdfjs();
+  const task = pdfjs.getDocument({ data: bytes.slice() });
+  let passwordRequired = false;
+
+  task.onPassword = (_updatePassword: (password: string) => void, _reason: unknown) => {
+    passwordRequired = true;
+    void task.destroy();
+  };
+
+  try {
+    return await task.promise;
+  } catch (err) {
+    if (passwordRequired) {
+      throw new PdfPasswordRequiredError();
+    }
+
+    throw err;
+  }
+}
+
+function isPasswordError(err: unknown): boolean {
+  if (!(err instanceof Error)) {
+    return false;
+  }
+
+  return /password/i.test(err.name) || /password/i.test(err.message);
+}
+
+function isEncryptedPdfLibError(err: unknown): boolean {
+  return err instanceof Error && /encrypted/i.test(err.message);
+}
+
+function loadedStatus(pdf: LoadedPdf): string {
+  const pageText = `${pdf.pageCount} page${pdf.pageCount === 1 ? "" : "s"}`;
+
+  if (pdf.securityStatus === "password-unlocked") {
+    return `${pdf.fileName} unlocked with password and loaded with ${pageText}.`;
+  }
+
+  if (pdf.securityStatus === "restrictions-removed") {
+    return `${pdf.fileName} restrictions removed and loaded with ${pageText}.`;
+  }
+
+  return `${pdf.fileName} loaded with ${pageText}.`;
 }
 
 function editedFileName(fileName: string): string {

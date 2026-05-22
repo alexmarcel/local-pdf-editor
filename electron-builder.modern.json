@@ -7,6 +7,15 @@
     "electron/**/*",
     "package.json"
   ],
+  "extraResources": [
+    {
+      "from": "tools/qpdf",
+      "to": "qpdf",
+      "filter": [
+        "**/*"
+      ]
+    }
+  ],
   "directories": {
     "output": "release/modern"
   },

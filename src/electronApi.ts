@@ -6,6 +6,7 @@ declare global {
     pdfApi?: {
       openPdf: () => Promise<PdfFilePayload | null>;
       readPdfFromPath: (path: string) => Promise<PdfFilePayload>;
+      unlockPdf: (path: string, password: string) => Promise<PdfFilePayload>;
       savePdfAs: (bytesBase64: string, suggestedName: string) => Promise<SaveResult | null>;
       overwritePdf: (path: string, bytesBase64: string) => Promise<SaveResult>;
     };
@@ -25,7 +26,8 @@ function payloadToLoadedPdf(payload: PdfFilePayload): LoadedPdf {
     originalPath: payload.path,
     fileName: payload.file_name,
     originalBytes: base64ToUint8Array(payload.bytes_base64),
-    pageCount: 0
+    pageCount: 0,
+    securityStatus: payload.security_status ?? "none"
   };
 }
 
@@ -37,6 +39,14 @@ export async function openPdfDialog(): Promise<LoadedPdf | null> {
 export async function readPdfFromPath(path: string): Promise<LoadedPdf> {
   const payload = await getPdfApi().readPdfFromPath(path);
   return payloadToLoadedPdf(payload);
+}
+
+export async function unlockPdf(path: string, password: string): Promise<LoadedPdf> {
+  const payload = await getPdfApi().unlockPdf(path, password);
+  return {
+    ...payloadToLoadedPdf(payload),
+    securityStatus: password ? "password-unlocked" : "restrictions-removed"
+  };
 }
 
 export async function savePdfAs(bytes: Uint8Array, suggestedName: string): Promise<SaveResult | null> {

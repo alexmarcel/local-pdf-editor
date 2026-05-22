@@ -3,6 +3,7 @@ export interface LoadedPdf {
   fileName: string;
   originalBytes: Uint8Array;
   pageCount: number;
+  securityStatus?: PdfSecurityStatus;
 }
 
 export interface PageModel {
@@ -21,10 +22,13 @@ export interface EditHistory {
 
 export type PdfCompressionLevel = "none" | "standard" | "maximum";
 
+export type PdfSecurityStatus = "none" | "password-unlocked" | "restrictions-removed";
+
 export interface PdfFilePayload {
   path: string;
   file_name: string;
   bytes_base64: string;
+  security_status?: PdfSecurityStatus;
 }
 
 export interface SaveResult {
