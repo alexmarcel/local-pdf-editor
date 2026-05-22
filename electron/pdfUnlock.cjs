@@ -12,14 +12,18 @@ async function unlockPdfPayload(inputPath, password) {
 
   try {
     await fs.writeFile(passwordPath, password, "utf8");
-    await runQpdf(qpdfPath, [
-      "--decrypt",
-      "--remove-restrictions",
-      `--password-file=${passwordPath}`,
-      "--",
-      inputPath,
-      outputPath
-    ]);
+    const args = buildUnlockArgs(passwordPath, inputPath, outputPath);
+
+    try {
+      await runQpdf(qpdfPath, args);
+    } catch (err) {
+      if (!isRecoverableDamageError(err)) {
+        throw err;
+      }
+
+      await fs.rm(outputPath, { force: true });
+      await runQpdf(qpdfPath, buildUnlockArgs(passwordPath, inputPath, outputPath, true));
+    }
 
     return await fs.readFile(outputPath);
   } catch (err) {
@@ -33,6 +37,24 @@ async function unlockPdfPayload(inputPath, password) {
   } finally {
     await fs.rm(tempDir, { recursive: true, force: true });
   }
+}
+
+function buildUnlockArgs(passwordPath, inputPath, outputPath, ignoreXrefStreams = false) {
+  return [
+    "--warning-exit-0",
+    ...(ignoreXrefStreams ? ["--ignore-xref-streams"] : []),
+    "--decrypt",
+    "--remove-restrictions",
+    `--password-file=${passwordPath}`,
+    "--",
+    inputPath,
+    outputPath
+  ];
+}
+
+function isRecoverableDamageError(err) {
+  const message = err instanceof Error ? err.message : "";
+  return /damaged|xref|cross-reference|reconstruct/i.test(message);
 }
 
 function resolveQpdfPath() {

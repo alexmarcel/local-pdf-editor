@@ -16,6 +16,7 @@ import { FileDown, FileInput, Save, Undo2, Redo2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type DragEvent } from "react";
 import { PDFDocument } from "pdf-lib";
 import PageCard from "./PageCard";
+import PagePreviewModal from "./PagePreviewModal";
 import { exportEditedPdf } from "./pdfExport";
 import {
   createHistory,
@@ -60,8 +61,13 @@ export default function App() {
   const [compressionLevel, setCompressionLevel] = useState<PdfCompressionLevel>("standard");
   const [pendingPasswordPdf, setPendingPasswordPdf] = useState<PendingPasswordPdf | null>(null);
   const [password, setPassword] = useState("");
+  const [previewPageId, setPreviewPageId] = useState<string | null>(null);
   const { document: pdfDocument, error: previewError } = usePdfDocument(loadedPdf?.originalBytes ?? null);
   const pages = useMemo(() => (history ? visiblePages(history.present) : []), [history]);
+  const previewPage = useMemo(
+    () => pages.find((page) => page.id === previewPageId) ?? null,
+    [pages, previewPageId]
+  );
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -340,6 +346,7 @@ export default function App() {
                     displayIndex={index}
                     pdfDocument={pdfDocument}
                     onDelete={(pageId) => history && applyHistory(deletePage(history, pageId))}
+                    onPreview={setPreviewPageId}
                     onRotate={(pageId, delta) => history && applyHistory(rotatePage(history, pageId, delta))}
                   />
                 ))}
@@ -380,6 +387,14 @@ export default function App() {
             </div>
           </form>
         </div>
+      ) : null}
+      {previewPage ? (
+        <PagePreviewModal
+          page={previewPage}
+          displayIndex={pages.findIndex((page) => page.id === previewPage.id)}
+          pdfDocument={pdfDocument}
+          onClose={() => setPreviewPageId(null)}
+        />
       ) : null}
       <div className="status-bar">
         <span>{status}</span>

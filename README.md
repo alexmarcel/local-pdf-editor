@@ -20,6 +20,7 @@ Use the modern installer whenever possible. The legacy installer exists for olde
 - Open password-protected PDFs when you know the password.
 - Remove print/edit restrictions from PDFs before editing.
 - Preview pages as thumbnails.
+- Open a larger page preview from any thumbnail.
 - Delete pages.
 - Drag pages to rearrange order.
 - Rotate pages left or right.

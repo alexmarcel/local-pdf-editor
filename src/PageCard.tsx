@@ -1,6 +1,6 @@
 import { CSS } from "@dnd-kit/utilities";
 import { useSortable } from "@dnd-kit/sortable";
-import { GripVertical, RotateCcw, RotateCw, Trash2 } from "lucide-react";
+import { GripVertical, RotateCcw, RotateCw, Search, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "./pdfjs";
 import type { PageModel } from "./pdfTypes";
@@ -10,6 +10,7 @@ interface PageCardProps {
   displayIndex: number;
   pdfDocument: PDFDocumentProxy | null;
   onDelete: (pageId: string) => void;
+  onPreview: (pageId: string) => void;
   onRotate: (pageId: string, delta: number) => void;
 }
 
@@ -18,6 +19,7 @@ export default function PageCard({
   displayIndex,
   pdfDocument,
   onDelete,
+  onPreview,
   onRotate
 }: PageCardProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -73,6 +75,11 @@ export default function PageCard({
     >
       <div className="page-preview">
         <canvas ref={canvasRef} className={renderError ? "is-hidden" : ""} />
+        {!renderError ? (
+          <button className="preview-button" title="Preview page" onClick={() => onPreview(page.id)}>
+            <Search size={22} />
+          </button>
+        ) : null}
         {renderError ? <span className="preview-error">{renderError}</span> : null}
       </div>
       <div className="page-meta">
