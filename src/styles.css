@@ -228,6 +228,8 @@ button:disabled {
 
 .page-card {
   min-width: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 238px) auto;
   border: 1px solid #d9d6cc;
   border-radius: 8px;
   background: #ffffff;
@@ -242,11 +244,13 @@ button:disabled {
 
 .page-preview {
   position: relative;
-  height: 238px;
+  min-height: 0;
+  height: 100%;
   display: grid;
   place-items: center;
   padding: 12px;
   background: #ece9df;
+  overflow: hidden;
 }
 
 .page-preview canvas {
@@ -268,8 +272,9 @@ button:disabled {
   border: 0;
   background: rgba(29, 36, 51, 0);
   color: #ffffff;
-  cursor: zoom-in;
+  cursor: default;
   opacity: 0;
+  pointer-events: none;
   transition:
     background 140ms ease,
     opacity 140ms ease;
@@ -282,6 +287,8 @@ button:disabled {
   border-radius: 999px;
   background: rgba(32, 39, 55, 0.84);
   box-shadow: 0 8px 24px rgba(20, 24, 32, 0.24);
+  cursor: zoom-in;
+  pointer-events: auto;
 }
 
 .page-preview:hover .preview-button,
@@ -297,12 +304,15 @@ button:disabled {
 }
 
 .page-meta {
+  position: relative;
+  z-index: 1;
   min-height: 48px;
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) auto;
+  grid-template-columns: 36px minmax(0, 1fr) max-content;
   align-items: center;
   gap: 8px;
   padding: 7px 8px;
+  background: #ffffff;
 }
 
 .page-meta span {
@@ -316,6 +326,7 @@ button:disabled {
 
 .page-actions {
   display: flex;
+  flex: 0 0 auto;
   gap: 4px;
 }
 
@@ -502,6 +513,10 @@ button:disabled {
   }
 
   .page-preview {
-    height: 212px;
+    height: 100%;
+  }
+
+  .page-card {
+    grid-template-rows: minmax(0, 212px) auto;
   }
 }
