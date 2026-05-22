@@ -33,12 +33,6 @@ Use the modern installer whenever possible. The legacy installer exists for olde
 - Node.js
 - npm
 
-If `npm` is not available on your PATH, use:
-
-```powershell
-& "C:\Program Files\nodejs\npm.cmd" --version
-```
-
 ## Development
 
 Install dependencies:
@@ -51,13 +45,6 @@ Start the desktop app in development mode:
 
 ```powershell
 npm run dev
-```
-
-If your terminal cannot find `npm`, use:
-
-```powershell
-& "C:\Program Files\nodejs\npm.cmd" install
-& "C:\Program Files\nodejs\npm.cmd" run dev
 ```
 
 ## Build
